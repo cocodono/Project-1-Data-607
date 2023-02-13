@@ -47,7 +47,7 @@ even_chess <- data.frame(chess[row_odd == 0,])[-1,]
 ## Making a dataframe out of odd_chess
 
 ```{r}
-odd_cols <- c('Pair','Player_Name','Total','Round_1_opponent','Round_2_opponent','Round_3_opponent','Round_4_opponent','Round_5_opponent','Round_6_opponent','Round_7_opponent')
+odd_cols <- c('Player_Number','Player_Name','Total','Round_1_opponent','Round_2_opponent','Round_3_opponent','Round_4_opponent','Round_5_opponent','Round_6_opponent','Round_7_opponent')
 
 separated_odd <- odd_chess %>% 
   as.data.frame() %>%  
@@ -60,7 +60,7 @@ separated_odd$row_id <- row_id
 ## Making a dataframe out of even_chess
 
 ```{r}
-even_cols <- c('Number','USCF_ID / Rtg (Pre->Post)','N','Round_1_result','Round_2_result','Round_3_result','Round_4_result','Round_5_result','Round_6_result','Round_7_result')
+even_cols <- c('State','USCF_ID / Rtg (Pre->Post)','N','Round_1_result','Round_2_result','Round_3_result','Round_4_result','Round_5_result','Round_6_result','Round_7_result')
 
 separated_even <- even_chess %>% 
   as.data.frame() %>%  
@@ -68,15 +68,43 @@ separated_even <- even_chess %>%
 
 row_id <- c(1:nrow(separated_even))
 separated_even$row_id <- row_id
-
-separated_even
 ```
 
-
+## Merging even and odd
 
 ```{r}
 full_chess <- merge(separated_odd, separated_even, by = 'row_id') %>%
-  subset(select = -c(row_id))
+  subset(select = -c(row_id)) %>%
+  separate('USCF_ID / Rtg (Pre->Post)', c('USCF_ID', 'Rtg_Pre_Post'), '\\/') %>%
+  separate('Rtg_Pre_Post', c('pre_rating','post_rating'), '->')
 ```
 
+## Making necessary columns numbers
 
+```{r}
+full_chess$pre_rating <- strtoi(str_extract(full_chess$pre_rating, '[0-9]+'))
+full_chess$post_rating <- strtoi(str_extract(full_chess$post_rating, '[0-9]+'))
+
+for (item in colnames(full_chess)[grepl("opponent", colnames(full_chess))]) {
+   full_chess[[item]] <- full_chess$pre_rating[strtoi(str_extract(full_chess[[item]], '[0-9]+'))]
+}
+```
+
+## Average Opponent Rating
+
+```{r}
+full_chess$avg_opp_rate <- NA
+
+for (i in 1:nrow(full_chess)) {
+  full_chess$avg_opp_rate[i] <- round(rowMeans(full_chess[i,grep('Round_1_opponent',colnames(full_chess)):grep("Round_7_opponent",colnames(full_chess))], na.rm=TRUE))
+}
+```
+
+## Writing the csv
+
+```{r}
+filtered_chess <- full_chess %>%
+  select(Player_Name, State, Total, pre_rating, avg_opp_rate)
+
+write.csv(filtered_chess, 'chess_stats.csv')
+```
