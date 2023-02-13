@@ -1,0 +1,82 @@
+---
+title: "Project 1 Data 607"
+author: "Coco Donovan"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Necessary Packages
+
+```{r}
+library(dplyr)
+library(stringr)
+library(tidyr)
+```
+
+## Loading Raw Txt File
+
+```{r}
+chess <- 'https://raw.githubusercontent.com/cocodono/Project-1-Data-607/main/Chess%20Players'
+
+chess <- readLines(chess)
+
+chess <- data.frame(chess)
+```
+
+## Removing the lines of dashes
+
+```{r}
+chess <- data.frame(chess[chess != '-----------------------------------------------------------------------------------------'])
+```
+
+## Even and Odd Rows
+
+```{r}
+row_odd <- seq_len(nrow(chess)) %% 2
+
+odd_chess <- data.frame(chess[row_odd == 1,])[-1,]
+even_chess <- data.frame(chess[row_odd == 0,])[-1,]
+```
+
+## Making a dataframe out of odd_chess
+
+```{r}
+odd_cols <- c('Pair','Player_Name','Total','Round_1_opponent','Round_2_opponent','Round_3_opponent','Round_4_opponent','Round_5_opponent','Round_6_opponent','Round_7_opponent')
+
+separated_odd <- odd_chess %>% 
+  as.data.frame() %>%  
+  separate(1, into = odd_cols, sep = "\\|")
+
+row_id <- c(1:nrow(separated_odd))
+separated_odd$row_id <- row_id
+```
+
+## Making a dataframe out of even_chess
+
+```{r}
+even_cols <- c('Number','USCF_ID / Rtg (Pre->Post)','N','Round_1_result','Round_2_result','Round_3_result','Round_4_result','Round_5_result','Round_6_result','Round_7_result')
+
+separated_even <- even_chess %>% 
+  as.data.frame() %>%  
+  separate(1, into = even_cols, sep = "\\|")
+
+row_id <- c(1:nrow(separated_even))
+separated_even$row_id <- row_id
+
+separated_even
+```
+
+
+
+```{r}
+full_chess <- merge(separated_odd, separated_even, by = 'row_id') %>%
+  subset(select = -c(row_id))
+```
+
+
