@@ -7,6 +7,19 @@ output:
   html_document: default
 ---
 
+## Introduction:
+
+This project's purpose is to display the ability to convert a text file with 
+specific formatting into a CSV file with a subset of the fields present in the 
+initial text file, in addition, to the calculated average of each chess player's
+average opponent rating. The main challenge this text file presents is that an 
+individual chess player's information takes up two rows, so I will have to find 
+a creative solution that allows me to work with both rows for the player. I also
+recognize that this project will serve as an opportunity to work on my Regex 
+skills, as I will need to use some average function to create the average 
+opponent rating, and the initial file is all text.
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -17,6 +30,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(stringr)
 library(tidyr)
+library(ggplot2)
 ```
 
 ## Loading Raw Txt File
@@ -79,11 +93,13 @@ full_chess <- merge(separated_odd, separated_even, by = 'row_id') %>%
   separate('Rtg_Pre_Post', c('pre_rating','post_rating'), '->')
 ```
 
-## Making necessary columns numbers
+## Making necessary columns numbers 
 
 ```{r}
 full_chess$pre_rating <- strtoi(str_extract(full_chess$pre_rating, '[0-9]+'))
 full_chess$post_rating <- strtoi(str_extract(full_chess$post_rating, '[0-9]+'))
+
+# creative solution: switch the chess player number with the chess player's pre_rating!
 
 for (item in colnames(full_chess)[grepl("opponent", colnames(full_chess))]) {
    full_chess[[item]] <- full_chess$pre_rating[strtoi(str_extract(full_chess[[item]], '[0-9]+'))]
@@ -108,3 +124,19 @@ filtered_chess <- full_chess %>%
 
 write.csv(filtered_chess, 'chess_stats.csv')
 ```
+
+## Conclusion:
+
+I was correct in my assessment that Regex would be indispensable in this 
+project. I was also correct in my assertion that I would have to think of 
+creative solutions due to the two-line-per-player observation format (in my 
+case, I split the data set into two and then merged the two back together, 
+resulting in one row per player). To create the average opponent rating, I 
+decided the most efficient option was to replace each chess player's number 
+with their pre-rating, so I could easily take the mean across the rows. I would 
+be interested to see a better solution to the even and odd rows problem present
+due to the two-rows-per-player format of the original file. My method worked, 
+and I feel there may be a better solution.
+
+
+
